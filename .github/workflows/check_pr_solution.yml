@@ -34,6 +34,7 @@ jobs:
                 "baekjoon", "programmers", "leetcode", "hackerrank"
               ];
 
+              console.log(process.env.SECRETS);
               const token = process.env.SECRETS.GH_TOKEN;
               const octokit = new Octokit({
                 auth: token
