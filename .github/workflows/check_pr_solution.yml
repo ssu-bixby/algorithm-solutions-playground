@@ -1,0 +1,140 @@
+name: Auto Check Solution
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+    create-pull-requst:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v2
+          with:
+            ref: main
+        - name: Setup Python
+          uses: actions/setup-python@v1
+          with:
+            python-version: '3.x'
+            architecture: 'x64'
+
+        - name: tagging (1. Run script)
+          run: |
+            python scripts/check_pull_request_code.py --pr_number ${{ github.event.number }}
+
+        - name: add Label
+          uses: actions/github-script@v7
+          with:
+            github-token: ${{ secrets.GH_TOKEN }}
+            script: |
+              const { SOLUTION_PR, SOLUTION_PER_PR, METADATA, SOLUTION_PATH, SOLUTION_LANGUAGE, SOLUTION_AUTHOR, SOLUTION_DESCRIPTION, OJ_NAME } = require("./result.json");
+              const languages = [
+                "C", "C++", "Python", "Java", "Kotlin", "Javascript", "Rust", "Swift", "Go"
+              ];
+              const oj_names = [
+                "baekjoon", "programmers", "leetcode", "hackerrank"
+              ];
+
+              const octokit = new Octokit({
+                auth: ${{ secrets.GH_TOKEN }}
+              });
+
+              const labels = await octokit.request('GET /repos/{owner}/{repo}/issues/{issue_number}/labels', {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number
+                headers: {
+                  'X-GitHub-Api-Version': '2022-11-28'
+                }
+              });
+
+              function Contain(s) {
+                return labels.includes(s);
+              }
+
+              async function addLabels(labels) {
+                await octokit.request('POST /repos/{owner}/{repo}/issues/{issue_number}/labels', {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number
+                  labels: labels
+                  headers: {
+                    'X-GitHub-Api-Version': '2022-11-28'
+                  }
+                });
+              }
+
+              async function removeLabel(label) {
+                await octokit.request('DELETE /repos/{owner}/{repo}/issues/{issue_number}/labels/{name}', {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number
+                  name: label,
+                  headers: {
+                    'X-GitHub-Api-Version': '2022-11-28'
+                  }
+                })
+              }
+
+              if(SOLUTION_PR === "True") {
+                if (!Contain("solution")) {
+                  addLabels(["solution"]);
+                }
+                
+                if(SOLUTION_PER_PR !== "True" || SOLUTION_PATH !== "True") {
+                  if (!Contain("Wrong PR")) {
+                    addLabels(["Wrong PR"]);
+                  }
+                }
+                else {
+                  if (Contain("Wrong PR")) {
+                    removeLabel("Wrong PR");
+                  }
+                }
+
+                for(const lang of languages) {
+                  if(lang === SOLUTION_LANGUAGE) continue;
+                  if (Contain(lang)) {
+                    removeLabel(lang);
+                  }
+                }
+                if(SOLUTION_LANGUAGE !== "404") {
+                  addLabels([SOLUTION_LANGUAGE]);
+                }
+
+                for(const oj_name of oj_names) {
+                  if(oj_name === OJ_NAME) continue;
+                  if (Contain(oj_name)) {
+                    removeLabel(oj_name);
+                  }
+                }
+
+                if(OJ_NAME !== "") {
+                  addLabels([OJ_NAME]);
+                }
+
+                if(METADATA === "True") {
+                  if(!Contain("solution")) {
+                    await octokit.request('POST /repos/{owner}/{repo}/issues/{issue_number}/comments', {
+                      issue_number: context.issue.number,
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      body: `솔루션을 올려주셔서 감사합니다.\n아래 정보가 맞는지 확인해주세요.\n\`\`\`\n작성자: ${SOLUTION_AUTHOR}\n언어: ${SOLUTION_LANGUAGE}\n사이트: ${OJ_NAME}\n풀이 설명: ${SOLUTION_DESCRIPTION}\n\`\`\``
+                      headers: {
+                        'X-GitHub-Api-Version': '2022-11-28'
+                      }
+                    })
+                  }
+                  else {
+                    await octokit.request('POST /repos/{owner}/{repo}/issues/{issue_number}/comments', {
+                      issue_number: context.issue.number,
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      body: `변경 사항\n아래 정보가 맞는지 확인해주세요.\n\`\`\`\n작성자: ${SOLUTION_AUTHOR}\n언어: ${SOLUTION_LANGUAGE}\n사이트: ${OJ_NAME}\n풀이 설명: ${SOLUTION_DESCRIPTION}\n\`\`\``
+                      headers: {
+                        'X-GitHub-Api-Version': '2022-11-28'
+                      }
+                    })
+                  }
+                }
+              }
