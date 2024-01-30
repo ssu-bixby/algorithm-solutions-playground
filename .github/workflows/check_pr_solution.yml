@@ -34,8 +34,9 @@ jobs:
                 "baekjoon", "programmers", "leetcode", "hackerrank"
               ];
 
+              const token = ${{ secrets.GH_TOKEN }};
               const octokit = new Octokit({
-                auth: ${{ secrets.GH_TOKEN }}
+                auth: token
               });
 
               const labels = await octokit.request('GET /repos/{owner}/{repo}/issues/{issue_number}/labels', {
