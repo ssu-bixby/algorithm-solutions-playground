@@ -1,8 +1,8 @@
 name: Auto Check Solution
 
 on:
-  pull_request:
-    branches: [ main ]
+  pull_request_target:
+    types: [opened, reopened, edited, ready_for_review]
 
 jobs:
     create-pull-requst:
