@@ -41,7 +41,7 @@ jobs:
               const labels = await octokit.request('GET /repos/{owner}/{repo}/issues/{issue_number}/labels', {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                issue_number: context.issue.number
+                issue_number: context.issue.number,
                 headers: {
                   'X-GitHub-Api-Version': '2022-11-28'
                 }
@@ -55,8 +55,8 @@ jobs:
                 await octokit.request('POST /repos/{owner}/{repo}/issues/{issue_number}/labels', {
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  issue_number: context.issue.number
-                  labels: labels
+                  issue_number: context.issue.number,
+                  labels: labels,
                   headers: {
                     'X-GitHub-Api-Version': '2022-11-28'
                   }
@@ -67,7 +67,7 @@ jobs:
                 await octokit.request('DELETE /repos/{owner}/{repo}/issues/{issue_number}/labels/{name}', {
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  issue_number: context.issue.number
+                  issue_number: context.issue.number,
                   name: label,
                   headers: {
                     'X-GitHub-Api-Version': '2022-11-28'
